@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { formatBytes, formatDateTime } from "../api/format";
 import { fetchProviders, updateProvider, type ProviderInfo } from "../api/providers";
+import { serverConnectUrl } from "../api/config";
 import { useApi } from "../app/context";
 import { useI18n } from "../app/i18n";
 import { loadStoredJson, saveStoredJson } from "../lib/storage";
@@ -27,13 +28,38 @@ function loadConnection(serverId: string): ClashConnection {
   };
 }
 
+// Default Clash API port used to prefill the connection URL when nothing is stored yet.
+const DEFAULT_CLASH_API_PORT = 9091;
+
+// Derive a sensible Clash API URL from the daemon server URL (same host, default port),
+// falling back to loopback when the host is unusable.
+function deriveDefaultClashUrl(serverUrl: string): string {
+  try {
+    const host = new URL(serverConnectUrl(serverUrl)).hostname;
+    if (host === "" || host === "0.0.0.0" || host === "::" || host === "::1") {
+      return `http://127.0.0.1:${DEFAULT_CLASH_API_PORT}`;
+    }
+    return `http://${host}:${DEFAULT_CLASH_API_PORT}`;
+  } catch {
+    return `http://127.0.0.1:${DEFAULT_CLASH_API_PORT}`;
+  }
+}
+
+function resolveConnection(serverId: string, serverUrl: string): ClashConnection {
+  const stored = loadConnection(serverId);
+  if (stored.url.trim() !== "") {
+    return stored;
+  }
+  return { url: deriveDefaultClashUrl(serverUrl), secret: stored.secret };
+}
+
 const NEVER_UPDATED = "0001-01-01T00:00:00Z";
 
 export function ProvidersView() {
   const api = useApi();
   const { t } = useI18n();
   const [connection, setConnection] = useState<ClashConnection>(() =>
-    loadConnection(api.config.id),
+    resolveConnection(api.config.id, api.config.url),
   );
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<Record<string, ProviderInfo> | null>(null);
@@ -64,10 +90,10 @@ export function ProvidersView() {
   useEffect(() => {
     setProviders(null);
     setError(null);
-    const stored = loadConnection(api.config.id);
-    setConnection(stored);
-    if (stored.url.trim() !== "") {
-      void refresh(stored);
+    const target = resolveConnection(api.config.id, api.config.url);
+    setConnection(target);
+    if (target.url.trim() !== "") {
+      void refresh(target);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api.config.id]);
