@@ -80,6 +80,7 @@ import {
   powerReportTitle,
 } from "./views/reportFormat";
 import { OverviewView } from "./views/OverviewView";
+import { ProvidersView } from "./views/ProvidersView";
 import {
   ImportProfileFileDialog,
   ImportRemoteProfileDialog,
@@ -110,6 +111,7 @@ import { cx } from "./lib/cx";
 export type Route =
   | { page: "overview" }
   | { page: "groups" }
+  | { page: "providers" }
   | { page: "connections" }
   | { page: "logs" }
   | { page: "tools" }
@@ -165,6 +167,8 @@ function routeFromHash(locationHash: string): Route {
       return { page: "overview" };
     case "groups":
       return { page: "groups" };
+    case "providers":
+      return { page: "providers" };
     case "connections":
       return { page: "connections" };
     case "logs":
@@ -308,6 +312,8 @@ function routeTitle(route: Route, t: Translate, language: string): string {
       return t("Dashboard");
     case "groups":
       return t("Groups");
+    case "providers":
+      return t("Providers");
     case "connections":
       return t("Connections");
     case "logs":
@@ -868,6 +874,7 @@ function ShellContent(props: ShellProps & { onRetry: () => void }) {
     <main className={styles.content}>
       {route.page === "overview" && <OverviewView />}
       {route.page === "groups" && <GroupsView />}
+      {route.page === "providers" && <ProvidersView />}
       {route.page === "connections" && <ConnectionsView />}
       {route.page === "logs" && <LogsView />}
       {route.page === "tools" && <ToolsView />}
@@ -965,6 +972,7 @@ function ShellContent(props: ShellProps & { onRetry: () => void }) {
                 {navItem("overview", t("Overview"), "dashboard", route.page === "overview")}
                 {hasGroups && navItem("groups", t("Groups"), "folder", route.page === "groups")}
                 {navItem("connections", t("Connections"), "swap_vert", route.page === "connections")}
+                {navItem("providers", t("Providers"), "download", route.page === "providers")}
               </>
             ) : (
               navItem("overview", t("Dashboard"), "dashboard", route.page === "overview")
@@ -980,6 +988,7 @@ function ShellContent(props: ShellProps & { onRetry: () => void }) {
             {navItem("overview", t("Overview"), "dashboard", route.page === "overview")}
             {hasGroups && navItem("groups", t("Groups"), "folder", route.page === "groups")}
             {started && navItem("connections", t("Connections"), "swap_vert", route.page === "connections")}
+            {started && navItem("providers", t("Providers"), "download", route.page === "providers")}
             {mainPages}
             <ServerPicker
               serversState={props.serversState}
